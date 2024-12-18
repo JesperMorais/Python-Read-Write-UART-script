@@ -24,7 +24,8 @@ def read_from_port(ser):
                         print(f"\rMottaget: {message}")
                         print("Skriv 't' för att skicka ett meddelande > ", end='', flush=True)
                 else:  # Cacha meddelanden
-                    message_queue.put(message)
+                    with lock:
+                        message_queue.put(message)  # Lägg till i kön
         except Exception as e:
             print("Läsfel:", e)
             break
@@ -33,7 +34,7 @@ def read_from_port(ser):
 def keyboard_listener(ser):
     global print_messages, input_flag
     while True:
-        user_input = input("\rSkriv 't' för att skicka ett meddelande > ").strip()
+        user_input = input("\nSkriv 't' för att skicka ett meddelande > ").strip()
         if user_input.lower() == "t":
             print_messages = False  # Stoppa printning av inkommande meddelanden
             input_flag = True       # Aktivera skrivläge
@@ -42,7 +43,7 @@ def keyboard_listener(ser):
                 ser.write((message + "\n").encode('utf-8'))  # Skicka meddelandet
                 print(f"Skickat: {message}")
             
-            # Skriv ut cachade meddelanden efter skrivläge
+            # Efter att ha skickat ett meddelande, skriv ut cachade meddelanden
             print("\nCachade meddelanden:")
             while not message_queue.empty():
                 cached_message = message_queue.get()
